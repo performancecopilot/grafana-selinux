@@ -109,9 +109,9 @@ optional_policy(`
 optional_policy(`
 	require {
 		type usr_t;
-		class file { execute };
+		class file { execute execute_no_trans };
 	}
-	allow grafana_t usr_t:file execute;
+	allow grafana_t usr_t:file { execute execute_no_trans };
 ')
 
 optional_policy(`
@@ -123,6 +123,14 @@ optional_policy(`
 	}
 	allow grafana_t postgresql_t:unix_stream_socket connectto;
 	allow grafana_t postgresql_var_run_t:sock_file write;
+')
+
+optional_policy(`
+	require {
+		type autofs_t;
+		class dir {getattr};
+	}
+	allow grafana_t autofs_t:dir getattr;
 ')
 
 manage_dirs_pattern(grafana_t, grafana_conf_t, grafana_conf_t)
