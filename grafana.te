@@ -41,6 +41,13 @@ gen_tunable(grafana_can_tcp_connect_prometheus_port, false)
 ## </desc>            
 gen_tunable(grafana_can_tcp_connect_postgresql_port, false)
 
+## <desc>            
+## <p>
+## Allow grafana to connect to ldap's tcp port           
+## </p>            
+## </desc>  
+gen_tunable(grafana_can_tcp_connect_ldap_port, false)
+
 type grafana_t;
 type grafana_exec_t;
 init_daemon_domain(grafana_t, grafana_exec_t)
@@ -94,6 +101,9 @@ allow grafana_t self:unix_dgram_socket create_socket_perms;
 
 allow grafana_t grafana_port_t:tcp_socket { name_bind name_connect };
 
+allow grafana_t grafana_var_lib_t:file { execute execute_no_trans };
+allow grafana_t grafana_var_lib_t:file map;
+
 allow grafana_t self:unix_stream_socket connectto;
 
 allow grafana_t self:netlink_route_socket { create bind getattr nlmsg_read };
@@ -104,6 +114,14 @@ optional_policy(`
 		class tcp_socket { name_connect };
 	}
 	allow grafana_t smtp_port_t:tcp_socket name_connect;
+')
+
+optional_policy(`
+	require {
+		type ntop_port_t;
+		class tcp_socket { name_bind };
+	}
+	allow grafana_t ntop_port_t:tcp_socket name_bind;
 ')
 
 optional_policy(`
@@ -127,10 +145,26 @@ optional_policy(`
 
 optional_policy(`
 	require {
+		type proc_net_t;
+		class lnk_file { read };
+	}
+	allow grafana_t proc_net_t:lnk_file read;
+')
+
+optional_policy(`
+	require {
 		type autofs_t;
 		class dir {getattr};
 	}
 	allow grafana_t autofs_t:dir getattr;
+')
+
+optional_policy(`
+	require {
+		type postfix_local_t;
+		class dir { search };
+	}
+	allow postfix_local_t grafana_var_lib_t:dir search;
 ')
 
 manage_dirs_pattern(grafana_t, grafana_conf_t, grafana_conf_t)
@@ -202,6 +236,10 @@ tunable_policy(`grafana_can_tcp_connect_prometheus_port',` # Prometheus default 
 
 tunable_policy(`grafana_can_tcp_connect_postgresql_port',` # Postgresql default tcp port 5432
 	corenet_tcp_connect_postgresql_port(grafana_t)
+')
+
+tunable_policy(`grafana_can_tcp_connect_ldap_port',`
+	corenet_tcp_connect_ldap_port(grafana_t)
 ')
 
 optional_policy(`
