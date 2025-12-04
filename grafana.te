@@ -110,6 +110,16 @@ allow grafana_t self:netlink_route_socket { create bind getattr nlmsg_read };
 
 optional_policy(`
 	require {
+		type cgroup_t;
+		class dir { search };
+		class file { open read };
+	}
+	allow grafana_t cgroup_t:dir search;
+	allow grafana_t cgroup_t:file { open read };
+')
+
+optional_policy(`
+	require {
 		type smtp_port_t;
 		class tcp_socket { name_connect };
 	}
